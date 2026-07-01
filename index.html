@@ -8,100 +8,262 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; margin: 0; padding: 40px 20px; line-height: 1.5; }
         .container { max-width: 1000px; margin: 0 auto; }
-        .brand-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 40px; padding-bottom: 25px; border-bottom: 1px dashed #e2e8f0; }
-        h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; text-transform: uppercase; margin: 0 0 5px 0; }
-        .sub-header { font-size: 1rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; }
         
+        /* Branding Area */
+        .brand-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 40px; padding-bottom: 25px; border-bottom: 1px dashed #e2e8f0; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 0.02em; }
+        /* The sub-header acts as your secret Admin Toggle */
+        .sub-header { font-size: 1rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; cursor: pointer; user-select: none; }
+        .contact-info { font-size: 0.95rem; font-weight: bold; color: #000000; margin-bottom: 20px; }
+        
+        /* Carousel */
         #carousel-container { width: 100%; height: 300px; overflow: hidden; margin-bottom: 40px; border-radius: 8px; background: #f8fafc; position: relative; }
         .carousel-track { display: flex; height: 100%; transition: transform 0.8s ease-in-out; }
         .carousel-slide { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         .carousel-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        .album-navigation { display: flex; gap: 12px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; justify-content: center; }
-        .tab-btn { background: transparent; color: #64748b; border: 1px solid #cbd5e1; padding: 6px 16px; border-radius: 20px; cursor: pointer; text-transform: uppercase; }
+        /* Navigation Album Tabs */
+        .album-navigation { display: flex; gap: 12px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; justify-content: center; align-items: center; font-family: 'Inter', sans-serif; }
+        .tab-btn { background: transparent; color: #64748b; border: 1px solid #cbd5e1; padding: 6px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; cursor: pointer; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.2s ease; }
         .tab-btn.active { background: #000000; color: #ffffff; border-color: #000000; }
 
+        /* Control Panels (Hidden by default) */
+        .admin-controls-wrapper { display: none; flex-direction: column; gap: 20px; margin-bottom: 40px; }
+        body.admin-mode .admin-controls-wrapper { display: flex; }
+        
+        .upload-panel { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; text-align: center; }
+        .panel-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; color: #0f172a; margin: 0 0 15px 0; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        
+        button { background: #000000; color: #ffffff; border: none; padding: 12px 24px; font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; transition: opacity 0.2s; }
+        button:hover { opacity: 0.85; }
+        .btn-qr { background: #64748b; margin-top: 10px; }
+
+        /* Grid */
         .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-        .media-card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-        .media-display-wrap { height: 240px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .media-display-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .media-card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #ffffff; cursor: pointer; transition: transform 0.2s ease; }
+        .media-card:hover { transform: translateY(-2px); }
+        .media-display-wrap { height: 240px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; box-sizing: border-box; }
+        .media-display-wrap img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; object-fit: contain; }
+        
+        /* Modals */
+        .photo-viewer-lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        .photo-viewer-lightbox.active { opacity: 1; pointer-events: auto; }
+        .lightbox-content-frame { max-width: 95%; max-height: 85%; display: flex; flex-direction: column; align-items: center; }
+        .lightbox-content-frame img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 4px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        
+        .qr-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .qr-modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .qr-card { background: #ffffff; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); max-width: 320px; width: 90%; }
+        .qr-card h3 { margin: 0 0 10px 0; font-size: 1.3rem; text-transform: uppercase; font-family: 'Playfair Display', serif; }
+        .qr-card p { font-size: 0.85rem; color: #64748b; margin: 0 0 20px 0; font-family: 'Inter', sans-serif; }
+        #qr-code-target { display: flex; justify-content: center; margin-bottom: 20px; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .btn-close { background: #f1f5f9; color: #0f172a; }
+        
+        .loading-text { text-align: center; font-family: 'Inter', sans-serif; color: #64748b; padding: 40px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
 <div class="container">
     <div class="brand-header">
         <h1>NEXGEN PRODUCTIONS</h1>
-        <div class="sub-header">QUALITY MEDIA SOLUTIONS</div>
+        <div class="sub-header" ondblclick="toggleAdminMode()" title="Double tap to open Admin tools">QUALITY MEDIA SOLUTIONS</div>
+        <div class="contact-info">326-9582</div>
     </div>
 
     <div id="carousel-container">
         <div class="carousel-track" id="carousel-track"></div>
     </div>
 
+    <div class="admin-controls-wrapper">
+        <div class="upload-panel">
+            <p class="panel-title">Management Studio</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Upload photos via GitHub. Use this panel to generate client sharing links.</p>
+            <button type="button" class="btn-qr" onclick="openQRCodeModal()">Generate QR For Current Album</button>
+        </div>
+    </div>
+
     <div class="album-navigation" id="album-nav-row"></div>
-    <div class="portfolio-grid" id="showcase-target-grid"></div>
+    <div class="portfolio-grid" id="showcase-target-grid"><div class="loading-text">Loading Portfolio...</div></div>
+</div>
+
+<div class="photo-viewer-lightbox" id="lightbox-overlay-frame" onclick="closeLargePhotoViewer()">
+    <div class="lightbox-content-frame">
+        <img id="lightbox-target-img" src="" alt="Expanded View">
+    </div>
+</div>
+
+<div class="qr-modal-overlay" id="qr-wrapper-modal">
+    <div class="qr-card">
+        <h3 id="qr-album-title">NEXGEN QR CODE</h3>
+        <p>Scan to view this album.</p>
+        <div id="qr-code-target"></div>
+        <div class="modal-buttons">
+            <button type="button" onclick="downloadQRImage()">Download QR Image</button>
+            <button type="button" class="btn-close" onclick="closeQRCodeModal()">Dismiss</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Configuration
     const GITHUB_USER = 'nexgenproductions868-glitch';
     const REPO_NAME = 'Nexgen-media';
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN; 
-
+    
     let portfolioItems = [];
-    let albumRegistry = [{ id: 'master', label: 'ALL ALBUMS' }];
+    let albumRegistry = [{ id: 'master', label: 'NEXGEN SELECTS' }];
+    let selectedActiveTab = 'master';
+    let currentSlide = 0;
 
-    async function fetchGitHubContent() {
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-        });
-        const albums = await response.json();
-        
-        for (const album of albums) {
-            if (album.type === 'dir') {
-                albumRegistry.push({ id: album.name, label: album.name.replace('_', ' ') });
-                const images = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums/${album.name}`, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
-                const files = await images.json();
-                files.forEach(file => {
-                    portfolioItems.push({ title: file.name, album: album.name, src: file.download_url });
-                });
+    // Toggle Admin UI Visibility
+    function toggleAdminMode() {
+        document.body.classList.toggle('admin-mode');
+    }
+
+    async function fetchGitHubData() {
+        try {
+            // Check if URL has a specific album parameter (e.g., ?album=rabz-9)
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedAlbum = urlParams.get('album');
+
+            // 1. Fetch Folders
+            const folderRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
+            if (!folderRes.ok) throw new Error("Could not reach GitHub");
+            const folders = await folderRes.json();
+
+            // 2. Fetch Images for each folder
+            for (const folder of folders) {
+                if (folder.type === 'dir') {
+                    const cleanName = folder.name.replace(/-/g, ' ').toUpperCase();
+                    albumRegistry.push({ id: folder.name, label: cleanName });
+                    
+                    const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums/${folder.name}`);
+                    const files = await imgRes.json();
+                    
+                    files.forEach(file => {
+                        if(file.name.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                            portfolioItems.push({ 
+                                title: file.name, 
+                                album: folder.name, 
+                                src: file.download_url 
+                            });
+                        }
+                    });
+                }
             }
+
+            // If client scanned a specific album QR, set that tab as active
+            if (requestedAlbum && albumRegistry.some(a => a.id === requestedAlbum)) {
+                selectedActiveTab = requestedAlbum;
+            }
+
+            renderApp();
+        } catch (error) {
+            document.getElementById('showcase-target-grid').innerHTML = '<div class="loading-text">Error loading images. Please ensure albums folder exists on GitHub.</div>';
         }
-        renderApp();
     }
 
     function renderApp() {
-        const nav = document.getElementById('album-nav-row');
-        nav.innerHTML = '';
-        albumRegistry.forEach(album => {
-            const btn = document.createElement('button');
-            btn.className = 'tab-btn';
-            btn.textContent = album.label;
-            btn.onclick = () => renderGrid(album.id);
-            nav.appendChild(btn);
-        });
-        renderGrid('master');
+        renderTabNavigation();
+        renderPortfolioGrid();
         updateCarousel();
+        setInterval(autoRotateCarousel, 5000);
     }
 
-    function renderGrid(albumId) {
+    function renderTabNavigation() {
+        const row = document.getElementById('album-nav-row');
+        row.innerHTML = '';
+        albumRegistry.forEach(album => {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${selectedActiveTab === album.id ? 'active' : ''}`;
+            btn.textContent = album.label;
+            btn.onclick = () => { 
+                selectedActiveTab = album.id; 
+                renderTabNavigation(); 
+                renderPortfolioGrid(); 
+            };
+            row.appendChild(btn);
+        });
+    }
+
+    function renderPortfolioGrid() {
         const grid = document.getElementById('showcase-target-grid');
         grid.innerHTML = '';
-        const filtered = albumId === 'master' ? portfolioItems : portfolioItems.filter(i => i.album === albumId);
+        const filtered = selectedActiveTab === 'master' ? portfolioItems : portfolioItems.filter(i => i.album === selectedActiveTab);
+        
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div class="loading-text">No images found in this album.</div>';
+            return;
+        }
+
         filtered.forEach(item => {
-            grid.innerHTML += `<div class="media-card"><div class="media-display-wrap"><img src="${item.src}" alt="${item.title}"></div></div>`;
+            const card = document.createElement('div');
+            card.className = 'media-card';
+            card.onclick = () => openLargePhotoViewer(item.src);
+            card.innerHTML = `<div class="media-display-wrap"><img src="${item.src}" loading="lazy" alt="Portfolio Image"></div>`;
+            grid.appendChild(card);
         });
     }
 
     function updateCarousel() {
         const track = document.getElementById('carousel-track');
-        track.innerHTML = portfolioItems.map(item => `<div class="carousel-slide"><img src="${item.src}"></div>`).join('');
+        track.innerHTML = '';
+        portfolioItems.forEach(item => {
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide';
+            slide.innerHTML = `<img src="${item.src}" loading="lazy" alt="Carousel Image">`;
+            track.appendChild(slide);
+        });
     }
 
-    fetchGitHubContent();
+    function autoRotateCarousel() {
+        if (portfolioItems.length === 0) return;
+        currentSlide = (currentSlide + 1) % portfolioItems.length;
+        document.getElementById('carousel-track').style.transform = `translateX(-${currentSlide * 100}%)`;
+    }
+
+    /* Lightbox Features */
+    function openLargePhotoViewer(src) {
+        document.getElementById('lightbox-target-img').src = src;
+        document.getElementById('lightbox-overlay-frame').classList.add('active');
+    }
+    function closeLargePhotoViewer() { 
+        document.getElementById('lightbox-overlay-frame').classList.remove('active'); 
+    }
+
+    /* QR Code Management */
+    function openQRCodeModal() {
+        const baseUrl = window.location.href.split('?')[0];
+        // Create link specifically to the currently selected tab
+        const link = selectedActiveTab === 'master' ? baseUrl : `${baseUrl}?album=${selectedActiveTab}`;
+        
+        // Update Modal text
+        const albumName = albumRegistry.find(a => a.id === selectedActiveTab).label;
+        document.getElementById('qr-album-title').textContent = albumName;
+
+        const qrTarget = document.getElementById('qr-code-target');
+        qrTarget.innerHTML = ''; 
+        new QRCode(qrTarget, { text: link, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+        document.getElementById('qr-wrapper-modal').classList.add('active');
+    }
+
+    function closeQRCodeModal() { 
+        document.getElementById('qr-wrapper-modal').classList.remove('active'); 
+    }
+
+    function downloadQRImage() { 
+        const img = document.querySelector('#qr-code-target img');
+        if(!img) return;
+        const a = document.createElement('a'); 
+        a.href = img.src; 
+        const albumName = albumRegistry.find(a => a.id === selectedActiveTab).label.replace(/\s+/g, '_');
+        a.download = `NEXGEN_QR_${albumName}.png`; 
+        a.click(); 
+    }
+
+    // Initialize App
+    fetchGitHubData();
 </script>
 </body>
 </html>
