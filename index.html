@@ -11,6 +11,9 @@
         
         /* Branding Area */
         .brand-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 40px; padding-bottom: 25px; border-bottom: 1px dashed #e2e8f0; }
+        .brand-logo-wrap { width: 320px; max-width: 90%; height: auto; margin-bottom: 20px; display: block; }
+        .brand-logo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
+        
         h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 0.02em; }
         /* The sub-header acts as your secret Admin Toggle */
         .sub-header { font-size: 1rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; cursor: pointer; user-select: none; }
@@ -68,15 +71,22 @@
 
 <div class="container">
     <div class="brand-header">
+        <!-- FIXED LOGO PATH: Serves locally from your unlocked repository -->
+        <div id="brand-logo-slot" class="brand-logo-wrap">
+            <img id="brand-img" src="website-logo/logo.png" alt="Branding Logo" onerror="this.parentElement.style.display='none';">
+        </div>
         <h1>NEXGEN PRODUCTIONS</h1>
+        <!-- DOUBLE CLICK THIS TEXT TO OPEN ADMIN DASHBOARD -->
         <div class="sub-header" ondblclick="toggleAdminMode()" title="Double tap to open Admin tools">QUALITY MEDIA SOLUTIONS</div>
         <div class="contact-info">326-9582</div>
     </div>
 
+    <!-- Carousel Container -->
     <div id="carousel-container">
         <div class="carousel-track" id="carousel-track"></div>
     </div>
 
+    <!-- Admin Tools (Hidden by default) -->
     <div class="admin-controls-wrapper">
         <div class="upload-panel">
             <p class="panel-title">Management Studio</p>
@@ -89,6 +99,7 @@
     <div class="portfolio-grid" id="showcase-target-grid"><div class="loading-text">Loading Portfolio...</div></div>
 </div>
 
+<!-- Modals -->
 <div class="photo-viewer-lightbox" id="lightbox-overlay-frame" onclick="closeLargePhotoViewer()">
     <div class="lightbox-content-frame">
         <img id="lightbox-target-img" src="" alt="Expanded View">
@@ -123,18 +134,19 @@
 
     async function fetchGitHubData() {
         try {
-            // Check if URL has a specific album parameter (e.g., ?album=rabz-9)
             const urlParams = new URLSearchParams(window.location.search);
             const requestedAlbum = urlParams.get('album');
 
-            // 1. Fetch Folders
+            // Fetch Folders from the updated /albums path
             const folderRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
             if (!folderRes.ok) throw new Error("Could not reach GitHub");
             const folders = await folderRes.json();
 
-            // 2. Fetch Images for each folder
+            // Fetch Images for each folder
             for (const folder of folders) {
                 if (folder.type === 'dir') {
+                    if (folder.name === 'website-logo') continue;
+
                     const cleanName = folder.name.replace(/-/g, ' ').toUpperCase();
                     albumRegistry.push({ id: folder.name, label: cleanName });
                     
@@ -153,7 +165,6 @@
                 }
             }
 
-            // If client scanned a specific album QR, set that tab as active
             if (requestedAlbum && albumRegistry.some(a => a.id === requestedAlbum)) {
                 selectedActiveTab = requestedAlbum;
             }
@@ -235,10 +246,8 @@
     /* QR Code Management */
     function openQRCodeModal() {
         const baseUrl = window.location.href.split('?')[0];
-        // Create link specifically to the currently selected tab
         const link = selectedActiveTab === 'master' ? baseUrl : `${baseUrl}?album=${selectedActiveTab}`;
         
-        // Update Modal text
         const albumName = albumRegistry.find(a => a.id === selectedActiveTab).label;
         document.getElementById('qr-album-title').textContent = albumName;
 
