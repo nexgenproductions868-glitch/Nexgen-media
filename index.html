@@ -17,11 +17,18 @@
         .sub-header { font-size: 0.85rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
         .contact-info { font-size: 0.9rem; font-weight: bold; color: #000000; margin-bottom: 10px; }
         
-        /* New Display Mode Styles */
+        /* Subtle Display Mode Button */
         .display-controls { text-align: center; margin-bottom: 20px; }
-        .fullscreen-btn { background: #000; color: #fff; padding: 10px 20px; border: none; cursor: pointer; font-size: 0.8rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .fullscreen-btn { 
+            background: transparent; color: #94a3b8; border: 1px solid #e2e8f0; 
+            padding: 4px 12px; border-radius: 4px; cursor: pointer; 
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+            transition: all 0.3s;
+        }
+        .fullscreen-btn:hover { color: #000; border-color: #000; }
+        
         #carousel-container { width: 100%; height: 260px; overflow: hidden; margin-bottom: 40px; position: relative; background: transparent; transition: all 0.3s; }
-        #carousel-container:fullscreen { background: #000; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; padding: 0; }
+        #carousel-container:fullscreen, #carousel-container:-webkit-full-screen { background: #000; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; padding: 0; }
         
         .carousel-track { display: flex; gap: 14px; height: 100%; transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1); width: max-content; }
         .carousel-slide { height: 100%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
@@ -52,7 +59,7 @@
     </div>
 
     <div class="display-controls">
-        <button class="fullscreen-btn" onclick="toggleFullscreen()">Enter Display Mode</button>
+        <button id="fs-trigger" class="fullscreen-btn">Display Mode</button>
     </div>
 
     <div id="carousel-container">
@@ -81,15 +88,17 @@
         return array.sort(() => Math.random() - 0.5);
     }
 
-    // 2. Fullscreen Function
-    function toggleFullscreen() {
+    // 2. Fullscreen Function (with Webkit support for iPads)
+    document.getElementById('fs-trigger').addEventListener('click', function() {
         const elem = document.getElementById('carousel-container');
-        if (!document.fullscreenElement) {
-            elem.requestFullscreen();
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (elem.requestFullscreen) elem.requestFullscreen();
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
         } else {
-            document.exitFullscreen();
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         }
-    }
+    });
 
     async function fetchGitHubData() {
         try {
