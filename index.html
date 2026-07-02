@@ -12,6 +12,7 @@
         
         .brand-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
         .brand-logo-wrap { width: 220px; max-width: 85%; height: auto; margin-bottom: 5px; }
+        .brand-logo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
         h1 { font-family: 'Playfair Display', serif; font-size: 1.9rem; text-transform: uppercase; margin: 0 0 2px 0; letter-spacing: 0.04em; }
         .sub-header { font-size: 0.85rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
         .contact-info { font-size: 0.9rem; font-weight: bold; color: #000000; margin-bottom: 10px; }
@@ -44,6 +45,9 @@
 
 <div class="container">
     <div class="brand-header">
+        <div class="brand-logo-wrap">
+            <img src="website-logo/logo.png" alt="Nexgen Logo" onerror="this.style.display='none';">
+        </div>
         <h1>NEXGEN PRODUCTIONS</h1>
         <div class="sub-header">QUALITY MEDIA SOLUTIONS</div>
         <div class="contact-info">326-9582</div>
@@ -107,7 +111,8 @@
         renderTabNavigation();
         renderPortfolioGrid();
         updateCarousel();
-        setInterval(autoRotateCarousel, 4000);
+        // 15 Second Interval (15000ms)
+        setInterval(autoRotateCarousel, 15000);
     }
 
     function renderTabNavigation() {
@@ -148,7 +153,6 @@
 
     function autoRotateCarousel() {
         const track = document.getElementById('carousel-track');
-        const container = document.getElementById('carousel-container');
         if (!track || track.children.length === 0) return;
         
         currentSlide = (currentSlide + 1) % track.children.length;
@@ -166,6 +170,7 @@
     
     function changeLightboxImage(direction, event) {
         if (event) event.stopPropagation();
+        currentGallery = getFilteredItems(); // Ensure we have the current gallery context
         currentLightboxIndex = (currentLightboxIndex + direction + currentGallery.length) % currentGallery.length;
         document.getElementById('lightbox-target-img').src = currentGallery[currentLightboxIndex].src;
     }
