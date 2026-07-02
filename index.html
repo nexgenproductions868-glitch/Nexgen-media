@@ -51,9 +51,21 @@
         /* Modals */
         .photo-viewer-lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
         .photo-viewer-lightbox.active { opacity: 1; pointer-events: auto; }
-        .lightbox-content-frame { max-width: 95%; max-height: 85%; display: flex; flex-direction: column; align-items: center; }
-        .lightbox-content-frame img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 4px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .lightbox-content-frame { max-width: 95%; max-height: 85%; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .lightbox-content-frame img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 4px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); user-select: none; }
         
+        /* Lightbox UI Navigation Arrows */
+        .lightbox-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; user-select: none; transition: all 0.2s ease; z-index: 2100; }
+        .lightbox-arrow:hover { background: #ffffff; color: #0f172a; }
+        .arrow-left { left: -70px; }
+        .arrow-right { right: -70px; }
+
+        @media (max-width: 1100px) {
+            .lightbox-content-frame { max-width: 80%; }
+            .arrow-left { left: 20px; position: fixed; }
+            .arrow-right { right: 20px; position: fixed; }
+        }
+
         .qr-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .qr-modal-overlay.active { opacity: 1; pointer-events: auto; }
         .qr-card { background: #ffffff; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); max-width: 320px; width: 90%; }
@@ -71,22 +83,18 @@
 
 <div class="container">
     <div class="brand-header">
-        <!-- FIXED LOGO PATH: Serves locally from your unlocked repository -->
         <div id="brand-logo-slot" class="brand-logo-wrap">
             <img id="brand-img" src="website-logo/logo.png" alt="Branding Logo" onerror="this.parentElement.style.display='none';">
         </div>
         <h1>NEXGEN PRODUCTIONS</h1>
-        <!-- DOUBLE CLICK THIS TEXT TO OPEN ADMIN DASHBOARD -->
         <div class="sub-header" ondblclick="toggleAdminMode()" title="Double tap to open Admin tools">QUALITY MEDIA SOLUTIONS</div>
         <div class="contact-info">326-9582</div>
     </div>
 
-    <!-- Carousel Container -->
     <div id="carousel-container">
         <div class="carousel-track" id="carousel-track"></div>
     </div>
 
-    <!-- Admin Tools (Hidden by default) -->
     <div class="admin-controls-wrapper">
         <div class="upload-panel">
             <p class="panel-title">Management Studio</p>
@@ -99,10 +107,11 @@
     <div class="portfolio-grid" id="showcase-target-grid"><div class="loading-text">Loading Portfolio...</div></div>
 </div>
 
-<!-- Modals -->
 <div class="photo-viewer-lightbox" id="lightbox-overlay-frame" onclick="closeLargePhotoViewer()">
-    <div class="lightbox-content-frame">
+    <div class="lightbox-content-frame" onclick="event.stopPropagation()">
+        <button type="button" class="lightbox-arrow arrow-left" onclick="changeLightboxImage(-1, event)">&#10094;</button>
         <img id="lightbox-target-img" src="" alt="Expanded View">
+        <button type="button" class="lightbox-arrow arrow-right" onclick="changeLightboxImage(1, event)">&#10095;</button>
     </div>
 </div>
 
@@ -126,6 +135,11 @@
     let albumRegistry = [{ id: 'master', label: 'NEXGEN SELECTS' }];
     let selectedActiveTab = 'master';
     let currentSlide = 0;
+    let currentLightboxIndex = 0;
+    
+    // Swipe Gestures Tracking
+    let touchStartX = 0;
+    let touchEndX = 0;
 
     // Toggle Admin UI Visibility
     function toggleAdminMode() {
@@ -137,32 +151,45 @@
             const urlParams = new URLSearchParams(window.location.search);
             const requestedAlbum = urlParams.get('album');
 
-            // Fetch Folders from the updated /albums path
-            const folderRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
-            if (!folderRes.ok) throw new Error("Could not reach GitHub");
-            const folders = await folderRes.json();
+            // Implement Session Storage Caching Engine
+            const cachedPortfolio = sessionStorage.getItem('nexgen_portfolio_items');
+            const cachedRegistry = sessionStorage.getItem('nexgen_album_registry');
 
-            // Fetch Images for each folder
-            for (const folder of folders) {
-                if (folder.type === 'dir') {
-                    if (folder.name === 'website-logo') continue;
+            if (cachedPortfolio && cachedRegistry) {
+                portfolioItems = JSON.parse(cachedPortfolio);
+                albumRegistry = JSON.parse(cachedRegistry);
+            } else {
+                // Fetch Folders from the updated /albums path
+                const folderRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
+                if (!folderRes.ok) throw new Error("Could not reach GitHub");
+                const folders = await folderRes.json();
 
-                    const cleanName = folder.name.replace(/-/g, ' ').toUpperCase();
-                    albumRegistry.push({ id: folder.name, label: cleanName });
-                    
-                    const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums/${folder.name}`);
-                    const files = await imgRes.json();
-                    
-                    files.forEach(file => {
-                        if(file.name.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                            portfolioItems.push({ 
-                                title: file.name, 
-                                album: folder.name, 
-                                src: file.download_url 
-                            });
-                        }
-                    });
+                // Fetch Images for each folder
+                for (const folder of folders) {
+                    if (folder.type === 'dir') {
+                        if (folder.name === 'website-logo') continue;
+
+                        const cleanName = folder.name.replace(/-/g, ' ').toUpperCase();
+                        albumRegistry.push({ id: folder.name, label: cleanName });
+                        
+                        const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums/${folder.name}`);
+                        const files = await imgRes.json();
+                        
+                        files.forEach(file => {
+                            if(file.name.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                                portfolioItems.push({ 
+                                    title: file.name, 
+                                    album: folder.name, 
+                                    src: file.download_url 
+                                });
+                            }
+                        });
+                    }
                 }
+                
+                // Write to cache for this browsing tab session
+                sessionStorage.setItem('nexgen_portfolio_items', JSON.stringify(portfolioItems));
+                sessionStorage.setItem('nexgen_album_registry', JSON.stringify(albumRegistry));
             }
 
             if (requestedAlbum && albumRegistry.some(a => a.id === requestedAlbum)) {
@@ -180,6 +207,7 @@
         renderPortfolioGrid();
         updateCarousel();
         setInterval(autoRotateCarousel, 5000);
+        initializeGestureListeners();
     }
 
     function renderTabNavigation() {
@@ -198,20 +226,24 @@
         });
     }
 
+    function getFilteredItems() {
+        return selectedActiveTab === 'master' ? portfolioItems : portfolioItems.filter(i => i.album === selectedActiveTab);
+    }
+
     function renderPortfolioGrid() {
         const grid = document.getElementById('showcase-target-grid');
         grid.innerHTML = '';
-        const filtered = selectedActiveTab === 'master' ? portfolioItems : portfolioItems.filter(i => i.album === selectedActiveTab);
+        const filtered = getFilteredItems();
         
         if (filtered.length === 0) {
             grid.innerHTML = '<div class="loading-text">No images found in this album.</div>';
             return;
         }
 
-        filtered.forEach(item => {
+        filtered.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'media-card';
-            card.onclick = () => openLargePhotoViewer(item.src);
+            card.onclick = () => openLargePhotoViewer(index);
             card.innerHTML = `<div class="media-display-wrap"><img src="${item.src}" loading="lazy" alt="Portfolio Image"></div>`;
             grid.appendChild(card);
         });
@@ -234,13 +266,57 @@
         document.getElementById('carousel-track').style.transform = `translateX(-${currentSlide * 100}%)`;
     }
 
-    /* Lightbox Features */
-    function openLargePhotoViewer(src) {
-        document.getElementById('lightbox-target-img').src = src;
+    /* Lightbox Features with Slider Mechanics */
+    function openLargePhotoViewer(index) {
+        currentLightboxIndex = index;
+        const filtered = getFilteredItems();
+        if (!filtered[index]) return;
+        
+        document.getElementById('lightbox-target-img').src = filtered[index].src;
         document.getElementById('lightbox-overlay-frame').classList.add('active');
     }
+    
+    function changeLightboxImage(direction, event) {
+        if (event) event.stopPropagation();
+        const filtered = getFilteredItems();
+        if (filtered.length === 0) return;
+        
+        currentLightboxIndex = (currentLightboxIndex + direction + filtered.length) % filtered.length;
+        document.getElementById('lightbox-target-img').src = filtered[currentLightboxIndex].src;
+    }
+
     function closeLargePhotoViewer() { 
         document.getElementById('lightbox-overlay-frame').classList.remove('active'); 
+    }
+
+    /* Touch & Keyboard Event Listeners */
+    function initializeGestureListeners() {
+        const lightboxFrame = document.getElementById('lightbox-overlay-frame');
+        
+        lightboxFrame.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        lightboxFrame.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipeGesture();
+        }, { passive: true });
+
+        document.addEventListener('keydown', (e) => {
+            if (!lightboxFrame.classList.contains('active')) return;
+            if (e.key === 'ArrowRight') changeLightboxImage(1);
+            if (e.key === 'ArrowLeft') changeLightboxImage(-1);
+            if (e.key === 'Escape') closeLargePhotoViewer();
+        });
+    }
+
+    function handleSwipeGesture() {
+        const swipeThreshold = 50; 
+        if (touchStartX - touchEndX > swipeThreshold) {
+            changeLightboxImage(1); // Swiped Left -> Load Next Image
+        } else if (touchEndX - touchStartX > swipeThreshold) {
+            changeLightboxImage(-1); // Swiped Right -> Load Previous Image
+        }
     }
 
     /* QR Code Management */
