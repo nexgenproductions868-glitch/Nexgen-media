@@ -69,8 +69,8 @@
 <script>
     const GITHUB_USER = 'nexgenproductions868-glitch';
     const REPO_NAME = 'Nexgen-media';
-    // CHANGE THIS to your actual Vercel public domain
-    const PUBLIC_DOMAIN = 'https://media-display-nine.vercel.app'; 
+    // Updated to your correct verified production domain
+    const PUBLIC_DOMAIN = 'https://media-display.vercel.app'; 
     
     let loadedAlbums = [{ id: 'master', label: 'NEXGEN SELECTS' }];
 
@@ -111,7 +111,7 @@
         const selector = document.getElementById('album-selector');
         const selectedVal = selector.value;
         
-        // This now uses the hardcoded PUBLIC_DOMAIN instead of the admin dashboard URL
+        // This now uses the correct PUBLIC_DOMAIN verified in your settings
         const destinationLink = selectedVal === 'master' ? PUBLIC_DOMAIN : `${PUBLIC_DOMAIN}/?album=${selectedVal}`;
         
         const qrTarget = document.getElementById('qr-code-target');
