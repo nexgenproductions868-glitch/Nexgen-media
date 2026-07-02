@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexgen Studio Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; margin: 0; padding: 40px 20px; line-height: 1.5; }
+        .container { max-width: 550px; margin: 0 auto; }
+        
+        /* Premium Letterhead Branding - Matched directly to Client End */
+        .brand-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 35px; padding-bottom: 20px; border-bottom: 1px dashed #e2e8f0; }
+        .brand-logo-wrap { width: 180px; max-width: 80%; height: auto; margin-bottom: 5px; display: block; }
+        .brand-logo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
+        
+        h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; text-transform: uppercase; margin: 0 0 2px 0; letter-spacing: 0.04em; }
+        .sub-header { font-size: 0.8rem; color: #64748b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; font-weight: 500; }
+        
+        /* Dashboard Control Block */
+        .studio-panel { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; box-sizing: border-box; }
+        .panel-description { font-size: 0.85rem; color: #64748b; margin: 0 0 25px 0; text-align: center; line-height: 1.6; }
+        
+        label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #0f172a; margin-bottom: 8px; }
+        
+        /* Polished Form Dropdown */
+        select { width: 100%; padding: 12px 16px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; font-weight: 500; margin-bottom: 24px; font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; outline: none; transition: border-color 0.2s ease; cursor: pointer; }
+        select:focus { border-color: #000000; background-color: #ffffff; }
+        
+        /* Buttons - Matched to Client Row Style */
+        button { width: 100%; background: #000000; color: #ffffff; border: none; padding: 14px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; transition: opacity 0.2s; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+        button:hover { opacity: 0.85; }
+        .btn-download { background: #64748b; display: none; margin-bottom: 0; margin-top: 5px; }
+
+        /* QR Target Visual Display Box */
+        #qr-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 30px; padding: 25px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; min-height: 220px; box-sizing: border-box; }
+        #qr-code-target img { border: 6px solid #ffffff; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); border-radius: 4px; }
+        
+        #live-link-preview { font-size: 0.8rem; color: #64748b; margin-top: 15px; word-break: break-all; text-align: center; font-family: 'Inter', sans-serif; font-weight: 500; background: #ffffff; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 4px; display: none; width: 100%; box-sizing: border-box; }
+        
+        .loading-placeholder { color: #94a3b8; font-size: 0.85rem; margin: 0; letter-spacing: 0.02em; font-weight: 500; text-transform: uppercase; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="brand-header">
+        <div class="brand-logo-wrap">
+            <img src="website-logo/logo.png" alt="Nexgen Logo" onerror="this.parentElement.style.display='none';">
+        </div>
+        <h1>NEXGEN PRODUCTIONS</h1>
+        <div class="sub-header">Management Studio Dashboard</div>
+    </div>
+
+    <div class="studio-panel">
+        <p class="panel-description">Select an active client directory from your synced GitHub repository branch to formulate and compile isolated QR code link assets.</p>
+        
+        <label for="album-selector">Choose Active Target Album</label>
+        <select id="album-selector" onchange="resetQRSpace()"></select>
+        
+        <button type="button" onclick="generateSecureQR()">Generate QR Target Asset</button>
+        <button type="button" id="dl-btn" class="btn-download" onclick="downloadQR()">Download Print Graphic</button>
+        
+        <div id="qr-container">
+            <div id="qr-code-target">
+                <p class="loading-placeholder">Awaiting Target Generation...</p>
+            </div>
+            <div id="live-link-preview"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const GITHUB_USER = 'nexgenproductions868-glitch';
+    const REPO_NAME = 'Nexgen-media';
+    let loadedAlbums = [{ id: 'master', label: 'NEXGEN SELECTS' }];
+
+    async function loadStudioAlbums() {
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
+            if (!res.ok) throw new Error();
+            const folders = await res.json();
+            
+            folders.forEach(f => {
+                if (f.type === 'dir' && f.name !== 'website-logo') {
+                    loadedAlbums.push({ id: f.name, label: f.name.replace(/-/g, ' ').toUpperCase() });
+                }
+            });
+            
+            const selector = document.getElementById('album-selector');
+            selector.innerHTML = '';
+            loadedAlbums.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = a.label;
+                selector.appendChild(opt);
+            });
+        } catch(e) {
+            document.getElementById('qr-code-target').innerHTML = '<p style="color:#ef4444; font-size: 0.85rem; font-weight:600;">ERROR LOADING REPOSITORIES. CHECK CONNECTION.</p>';
+        }
+    }
+
+    function resetQRSpace() {
+        document.getElementById('qr-code-target').innerHTML = '<p class="loading-placeholder">Awaiting Target Generation...</p>';
+        const preview = document.getElementById('live-link-preview');
+        preview.textContent = '';
+        preview.style.display = 'none';
+        document.getElementById('dl-btn').style.display = 'none';
+    }
+
+    function generateSecureQR() {
+        const selector = document.getElementById('album-selector');
+        const selectedVal = selector.value;
+        
+        const cleanBaseUrl = window.location.href.replace('dashboard.html', 'index.html').split('?')[0];
+        const destinationLink = selectedVal === 'master' ? cleanBaseUrl : `${cleanBaseUrl}?album=${selectedVal}`;
+        
+        const qrTarget = document.getElementById('qr-code-target');
+        qrTarget.innerHTML = '';
+        
+        new QRCode(qrTarget, { text: destinationLink, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+        
+        const preview = document.getElementById('live-link-preview');
+        preview.textContent = destinationLink;
+        preview.style.display = 'block';
+        document.getElementById('dl-btn').style.display = 'block';
+    }
+
+    function downloadQR() {
+        const img = document.querySelector('#qr-code-target img');
+        if(!img) return;
+        const selector = document.getElementById('album-selector');
+        const albumLabel = selector.options[selector.selectedIndex].text.replace(/\s+/g, '_');
+        
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `NEXGEN_QR_${albumLabel}.png`;
+        a.click();
+    }
+
+    loadStudioAlbums();
+</script>
+</body>
+</html>
