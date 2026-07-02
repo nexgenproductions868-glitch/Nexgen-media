@@ -69,50 +69,42 @@
 <script>
     const GITHUB_USER = 'nexgenproductions868-glitch';
     const REPO_NAME = 'Nexgen-media';
-    // Updated to your correct verified production domain
     const PUBLIC_DOMAIN = 'https://media-display.vercel.app'; 
     
-    let loadedAlbums = [{ id: 'master', label: 'NEXGEN SELECTS' }];
-
     async function loadStudioAlbums() {
+        const selector = document.getElementById('album-selector');
         try {
             const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/albums`);
-            if (!res.ok) throw new Error();
             const folders = await res.json();
             
+            // Clear existing
+            selector.innerHTML = '<option value="master">NEXGEN SELECTS</option>';
+            
             folders.forEach(f => {
+                // Ensure it is a folder and ignore system files
                 if (f.type === 'dir' && f.name !== 'website-logo') {
-                    loadedAlbums.push({ id: f.name, label: f.name.replace(/-/g, ' ').toUpperCase() });
+                    console.log("Detected Album:", f.name); // Check console to see if "rtg-media-scrum" appears
+                    const opt = document.createElement('option');
+                    opt.value = f.name;
+                    opt.textContent = f.name.replace(/-/g, ' ').toUpperCase();
+                    selector.appendChild(opt);
                 }
             });
-            
-            const selector = document.getElementById('album-selector');
-            selector.innerHTML = '';
-            loadedAlbums.forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.label;
-                selector.appendChild(opt);
-            });
         } catch(e) {
-            document.getElementById('qr-code-target').innerHTML = '<p style="color:#ef4444; font-size: 0.85rem; font-weight:600;">ERROR LOADING REPOSITORIES. CHECK CONNECTION.</p>';
+            selector.innerHTML = '<option>ERROR LOADING ALBUMS</option>';
         }
     }
 
     function resetQRSpace() {
         document.getElementById('qr-code-target').innerHTML = '<p class="loading-placeholder">Awaiting Target Generation...</p>';
-        const preview = document.getElementById('live-link-preview');
-        preview.textContent = '';
-        preview.style.display = 'none';
+        document.getElementById('live-link-preview').style.display = 'none';
         document.getElementById('dl-btn').style.display = 'none';
     }
 
     function generateSecureQR() {
         const selector = document.getElementById('album-selector');
         const selectedVal = selector.value;
-        
-        // This now uses the correct PUBLIC_DOMAIN verified in your settings
-        const destinationLink = selectedVal === 'master' ? PUBLIC_DOMAIN : `${PUBLIC_DOMAIN}/?album=${selectedVal}`;
+        const destinationLink = selectedVal === 'master' ? PUBLIC_DOMAIN : `${PUBLIC_DOMAIN}/?album=${encodeURIComponent(selectedVal)}`;
         
         const qrTarget = document.getElementById('qr-code-target');
         qrTarget.innerHTML = '';
@@ -130,7 +122,6 @@
         if(!img) return;
         const selector = document.getElementById('album-selector');
         const albumLabel = selector.options[selector.selectedIndex].text.replace(/\s+/g, '_');
-        
         const a = document.createElement('a');
         a.href = img.src;
         a.download = `NEXGEN_QR_${albumLabel}.png`;
